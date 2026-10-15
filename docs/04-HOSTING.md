@@ -7,22 +7,30 @@ Semua fakta di bawah diverifikasi langsung dari dokumentasi resmi pada 15 Oktobe
 
 ## 1. Mengapa bukan GitHub Pages untuk produksi
 
-Bunyi persis dari dokumentasi GitHub (dua halaman resmi, kutipan verbatim):
+Bunyi persis dari dokumentasi GitHub (kutipan verbatim, diverifikasi ulang secara adversarial):
 
 > "GitHub Pages is **not intended for or allowed to be used as a free web-hosting service** to run your online business, e-commerce site, or any other website that is **primarily directed at either facilitating commercial transactions or providing commercial software as a service (SaaS)**. **Some monetization efforts are permitted** on Pages, such as **donation buttons and crowdfunding links**."
-> — [GitHub Terms for Additional Products and Features](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features) · [GitHub Pages limits](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits)
+> — [GitHub Terms for Additional Products and Features](https://docs.github.com/en/site-policy/github-terms/github-terms-for-additional-products-and-features)
 
-**Terjemahan praktis:**
-- ✅ Tombol donasi dan tautan urun dana **eksplisit diizinkan**.
-- ⚠️ **Iklan (AdSense/sponsor) tidak disebut sama sekali** — tidak dilarang tegas, tidak diizinkan tegas. Zona abu-abu.
-- ❌ Situs yang *terutama* untuk transaksi komersial dilarang.
+**Yang juga berlaku dan penting** — GitHub Acceptable Use Policies §10 "Advertising on GitHub":
 
-**Keputusan proyek:** aplikasi ini memang bukan toko — misinya kesadaran situasional warga.
-Namun karena rencananya menampilkan iklan, menaruh **produksi** di sana berarti menaruh
-layanan darurat pada klausa yang bisa ditafsirkan sepihak oleh GitHub. Risiko nyatanya:
-**kehilangan hosting tepat saat kabut asap** — momen ketika aplikasi paling dibutuhkan.
-Maka: **GitHub Pages dipakai untuk staging/demo saja**, di mana tidak ada iklan dan tidak ada
-risiko layanan bagi warga.
+> "We **do not generally prohibit** use of GitHub for advertising. […] While we understand that you may want to promote your Content by posting **supporters' names or logos** in your Account, **the primary focus** of the Content posted in or through your Account to the Service **should not be advertising** or promotional marketing. **This includes Content posted in or through Pages** […]"
+> — [GitHub Acceptable Use Policies §10](https://docs.github.com/en/site-policy/acceptable-use-policies/github-acceptable-use-policies#10-advertising-on-github)
+
+**Pembacaan yang jujur:**
+
+| Pertanyaan | Jawaban |
+|---|---|
+| Apakah GitHub melarang komersial secara umum? | **Tidak.** Klausa menyasar tiga sasaran spesifik: menjalankan bisnis online, e-commerce, atau situs yang *terutama* untuk transaksi komersial/SaaS. |
+| Apakah donasi/urun dana boleh? | **Ya, eksplisit diizinkan.** |
+| Apakah iklan dilarang? | **Tidak dilarang secara umum** (AUP §10). Iklan tidak boleh menjadi **fokus utama** konten. |
+| Apakah AdSense di Pages diizinkan secara resmi? | **Tidak ada pernyataan resmi.** Kata "adsense" tidak muncul sama sekali di ToS, AUP, maupun Additional Terms. Ini zona yang belum ditafsirkan GitHub. |
+
+**Catatan penting:** klausa lama yang sering dikutip ("solely as permitted and intended … and for no other purpose") **sudah tidak ada lagi** di ketentuan yang berlaku (dihapus sekitar Mei 2018). Sumber-sumber lama yang mengutipnya sudah kedaluwarsa — baik untuk membela maupun menyerang penggunaan iklan.
+
+**Posisi proyek ini:** secara tekstual posisinya **cukup kuat** — ini aplikasi informasi publik, kontennya (titik panas, kualitas udara, laporan warga) jelas menjadi fokus utama, dan iklan hanya pendamping. Namun karena tidak ada penafsiran resmi, menaruh **produksi** di sana tetap berarti menaruh layanan darurat pada klausa yang bisa ditafsirkan sepihak. Risiko nyatanya: **kehilangan hosting tepat saat kabut asap** — momen ketika aplikasi paling dibutuhkan.
+
+**Keputusan:** GitHub Pages dipakai untuk **staging/demo** (tanpa iklan, tanpa risiko layanan warga). Produksi di Cloudflare Pages. Jika kelak ingin memakai GitHub Pages untuk produksi, jalur resminya adalah **bertanya langsung ke GitHub Support** — dokumen ToS sendiri menyediakan jalur itu.
 
 ### Batas teknis GitHub Pages (terverifikasi)
 Situs maksimum **1 GB**, bandwidth *soft* **100 GB/bulan**, *soft* **10 build/jam**, deploy

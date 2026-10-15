@@ -57,3 +57,6 @@ next-env.d.ts
 _research/
 research/
 riset-tmp/
+
+# Scratch verifikasi (bukti mentah riset; bukan bagian aplikasi)
+_verify/
