@@ -50,6 +50,7 @@ Perintah lain:
 | `npm test` | Tes unit Vitest (parser CSV FIRMS, klasifikasi kepercayaan) |
 | `npm run build` | Build produksi |
 | `npm run verify:db` | Memeriksa skema Supabase + membuktikan RLS memblokir `anon` |
+| `npm run check:openaq` | Mengecek berapa banyak stasiun PM2.5 OpenAQ di Indonesia (butuh API key) |
 
 Tanpa Supabase, aplikasi tetap berjalan dan menampilkan banner "Basis data belum dikonfigurasi".
 Untuk melihat peta berisi contoh titik: set `NEXT_PUBLIC_DEMO_MODE=true` (hanya pengembangan —
