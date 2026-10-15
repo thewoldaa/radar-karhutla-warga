@@ -1,0 +1,102 @@
+# Scheduled FIRMS ingestion.
+#
+# Why this workflow exists (documented trade-off, chosen by the project owner):
+#   GitHub Actions cron is free and portable, but it can be delayed under load
+#   and scheduled workflows are DISABLED after 60 days without repository
+#   activity. The watchdog step below re-enables a disabled schedule and also
+#   calls the ingest endpoint whenever data looks stale, so a missed run is
+#   recovered on the next scheduled attempt.
+#   Source: https://docs.github.com/en/actions/reference/events-that-trigger-workflows
+#
+# Required repository secrets:
+#   INGEST_URL          full URL, e.g. https://<domain>/api/ingest
+#   INGEST_HMAC_SECRET  same value as the server's INGEST_HMAC_SECRET
+#   (optional) STATUS_URL  public URL of /api/hotspots for the staleness check
+
+name: Ingest titik panas
+
+on:
+  schedule:
+    - cron: "7,37 * * * *" # every 30 min, offset to avoid the top-of-hour rush
+  workflow_dispatch: {} # manual runs for testing and recovery
+
+concurrency:
+  group: ingest-hotspots
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Re-enable schedule if GitHub disabled it (60 days idle)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          state=$(gh api "repos/${{ github.repository }}/actions/workflows/ingest.yml" --jq '.state' 2>/dev/null || echo "unknown")
+          echo "Workflow state: $state"
+          if [ "$state" = "disabled_inactivity" ]; then
+            echo "Re-enabling disabled schedule…"
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/ingest.yml/enable" || true
+          fi
+
+      - name: Check whether stored data is stale
+        id: check
+        env:
+          STATUS_URL: ${{ secrets.STATUS_URL }}
+        run: |
+          if [ -z "$STATUS_URL" ]; then
+            echo "STATUS_URL tidak diatur — langsung jalankan ingest."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          body=$(curl -fsS --max-time 30 "$STATUS_URL" || echo "")
+          if [ -z "$body" ]; then
+            echo "Status endpoint tidak dapat diakses — jalankan ingest sebagai pemulihan."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(printf '%s' "$body" | jq -r '.freshness.lastUpdated // empty')
+          stale=$(printf '%s' "$body" | jq -r '.freshness.stale // true')
+          if [ -z "$last" ]; then
+            echo "Tidak ada data tersimpan — jalankan ingest."
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          age=$(( $(date +%s) - $(date -d "$last" +%s) ))
+          echo "Umur data: $((age / 60)) menit (stale=$stale)"
+          if [ "$age" -gt 3600 ] || [ "$stale" = "true" ]; then
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: POST /api/ingest with HMAC signature
+        if: steps.check.outputs.stale == 'true'
+        env:
+          INGEST_URL: ${{ secrets.INGEST_URL }}
+          INGEST_HMAC_SECRET: ${{ secrets.INGEST_HMAC_SECRET }}
+        run: |
+          set -euo pipefail
+          if [ -z "${INGEST_URL:-}" ] || [ -z "${INGEST_HMAC_SECRET:-}" ]; then
+            echo "::error::Secret INGEST_URL atau INGEST_HMAC_SECRET belum diatur."
+            exit 1
+          fi
+          ts=$(date +%s)
+          body='{}'
+          sig=$(printf '%s.%s' "$ts" "$body" | openssl dgst -sha256 -hmac "$INGEST_HMAC_SECRET" -r | cut -d' ' -f1)
+          code=$(curl -sS -o /tmp/ingest-response.json -w '%{http_code}' \
+            --max-time 120 \
+            -X POST "$INGEST_URL" \
+            -H "Content-Type: application/json" \
+            -H "X-Ingest-Timestamp: $ts" \
+            -H "X-Ingest-Signature: sha256=$sig" \
+            --data "$body")
+          echo "HTTP $code"
+          cat /tmp/ingest-response.json || true
+          echo
+          if [ "$code" != "200" ]; then
+            echo "::error::Ingest gagal (HTTP $code)."
+            exit 1
+          fi

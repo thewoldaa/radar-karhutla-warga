@@ -1,0 +1,59 @@
+# Dependensi
+node_modules/
+.pnp
+.pnp.js
+
+# Build Next.js
+.next/
+out/
+build/
+dist/
+
+# Lingkungan — JANGAN pernah commit nilai rahasia
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+apphosting-debug.log
+
+# Supabase
+supabase/.branches/
+supabase/.temp/
+supabase/.env
+
+# Vercel / lain-lain
+.vercel/
+.turbo/
+
+# Sistem operasi
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Log & cache
+*.log
+npm-debug.log*
+yarn-error.log*
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Scratch riset Fase 0 (bukti mentah dari sub-agen; bukan bagian aplikasi)
+_research/
+research/
+riset-tmp/

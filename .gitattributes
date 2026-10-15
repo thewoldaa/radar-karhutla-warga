@@ -1,0 +1,18 @@
+# Normalize line endings: keep LF in the repository, let Git convert on checkout.
+* text=auto eol=lf
+
+# Binary files (never touch)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+
+# Lockfiles are generated; collapse diffs in reviews
+package-lock.json linguist-generated=true
+
+# Documentation and data files: treat as text
+*.md text
+*.sql text
+*.yml text
+*.yaml text

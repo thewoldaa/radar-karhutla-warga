@@ -1,0 +1,78 @@
+# Firebase App Hosting configuration.
+# Docs: https://firebase.google.com/docs/app-hosting/configure
+#
+# SECURITY: this file is safe to commit — it references secrets by NAME only.
+# Never put secret VALUES here. Create secrets with:
+#   firebase apphosting:secrets:set FIRMS_MAP_KEY
+#   firebase apphosting:secrets:grantaccess FIRMS_MAP_KEY --backend <BACKEND_ID>
+#
+# Setup (once): `firebase init apphosting` — choose region asia-southeast1 (Singapore)
+# and let it create/refresh firebase.json. VERIFY: region must be set explicitly,
+# because new backends default to us-east4.
+
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  minInstances: 0 # scale-to-zero (cold starts are acceptable for this app)
+  maxInstances: 100
+  concurrency: 80
+
+env:
+  # --- Public build-time values (safe to expose to the browser) --------------
+  - variable: NEXT_PUBLIC_MAP_STYLE_URL
+    value: https://tiles.openfreemap.org/styles/liberty
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_MAP_STYLE_URL_DARK
+    value: https://tiles.openfreemap.org/styles/dark
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_DEMO_MODE
+    value: "false" # demo data is strictly disabled in production builds
+    availability: [BUILD, RUNTIME]
+
+  # --- Public values to fill in (console values override this file) ----------
+  # - variable: NEXT_PUBLIC_SUPABASE_URL
+  #   value: https://<project-ref>.supabase.co
+  #   availability: [BUILD, RUNTIME]
+  # - variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  #   value: sb_publishable_...
+  #   availability: [BUILD, RUNTIME]
+  # - variable: NEXT_PUBLIC_TURNSTILE_SITE_KEY    # Fase 3
+  #   availability: [BUILD, RUNTIME]
+  # - variable: NEXT_PUBLIC_ADSENSE_CLIENT        # Fase 4
+  #   availability: [BUILD, RUNTIME]
+  # - variable: NEXT_PUBLIC_AD_CONTACT_EMAIL      # Fase 4
+  #   availability: [BUILD, RUNTIME]
+
+  # --- Non-secret runtime values ---------------------------------------------
+  # - variable: INGEST_AUDIENCE          # only for the optional Cloud Scheduler path
+  #   value: https://<backend-id>--<project-id>.asia-southeast1.hosted.app/api/ingest
+  #   availability: [RUNTIME]
+  # - variable: INGEST_SA_EMAIL          # only for the optional Cloud Scheduler path
+  #   value: <scheduler-sa>@<project-id>.iam.gserviceaccount.com
+  #   availability: [RUNTIME]
+
+  # --- Secrets (Cloud Secret Manager references) ------------------------------
+  # - variable: INGEST_HMAC_SECRET        # GitHub Actions cron (project default)
+  #   secret: INGEST_HMAC_SECRET
+  #   availability: [RUNTIME]
+  # - variable: SUPABASE_SECRET_KEY
+  #   secret: SUPABASE_SECRET_KEY
+  #   availability: [RUNTIME]
+  # - variable: FIRMS_MAP_KEY
+  #   secret: FIRMS_MAP_KEY
+  #   availability: [RUNTIME]
+  # - variable: OPENAQ_API_KEY            # Fase 2
+  #   secret: OPENAQ_API_KEY
+  #   availability: [RUNTIME]
+  # - variable: OPEN_METEO_API_KEY        # Fase 2 (commercial plan required once ads/sponsors run)
+  #   secret: OPEN_METEO_API_KEY
+  #   availability: [RUNTIME]
+  # - variable: TURNSTILE_SECRET_KEY      # Fase 3
+  #   secret: TURNSTILE_SECRET_KEY
+  #   availability: [RUNTIME]
+  # - variable: DEVICE_HASH_SECRET        # Fase 3
+  #   secret: DEVICE_HASH_SECRET
+  #   availability: [RUNTIME]
+  # - variable: IP_HASH_SECRET            # Fase 3
+  #   secret: IP_HASH_SECRET
+  #   availability: [RUNTIME]
