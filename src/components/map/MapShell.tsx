@@ -194,7 +194,7 @@ export function MapShell({ initialData }: MapShellProps) {
         locationMessage={locationMessage}
       />
 
-      <SummarySheet data={displayData} />
+      <SummarySheet data={displayData} userLocation={userLocation} />
     </div>
   );
 }

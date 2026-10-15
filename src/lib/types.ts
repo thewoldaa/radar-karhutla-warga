@@ -2,6 +2,8 @@
  * Shared domain types for the app (server and client).
  */
 
+import type { IspuResult } from "@/lib/ispu/convert";
+
 export type ConfidenceClass = "low" | "nominal" | "high";
 
 /** Geographic bounding box in degrees (west,south,east,north — same order as FIRMS). */
@@ -25,6 +27,35 @@ export interface HotspotFeature {
   frp: number | null;
   daynight: "D" | "N" | null;
   source: string;
+}
+
+/**
+ * Air quality reading.
+ *
+ * `kind` is load-bearing for honesty: "model" is a coarse-area ESTIMATE from a
+ * CAMS grid cell (~45 km), "station" is an actual ground measurement. The UI must
+ * label them differently and must never present a model value as a measurement.
+ */
+export interface AirReading {
+  provider: "open-meteo" | "openaq";
+  kind: "model" | "station";
+  stationId: string | null;
+  locationName: string;
+  lat: number;
+  lon: number;
+  pm25: number | null;
+  pm10: number | null;
+  usAqi: number | null;
+  /** Present when we could compute ISPU; carries its own estimate flag. */
+  ispu: IspuResult | null;
+  observedAt: string; // ISO UTC
+  attribution: string;
+}
+
+export interface AirResponse {
+  readings: AirReading[];
+  freshness: DataFreshness;
+  attribution: { openMeteo: string; cams: string };
 }
 
 /** Top provinces by hot-spot count inside the current filter window. */

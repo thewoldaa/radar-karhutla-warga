@@ -11,6 +11,7 @@
 
 import { NextResponse } from "next/server";
 
+import { loadCityAirModel, upsertAirReadings } from "@/lib/data/air";
 import {
   recordIngestionRun,
   upsertHotspots,
@@ -72,9 +73,42 @@ export async function POST(request: Request): Promise<NextResponse> {
   const startedAt = Date.now();
   const results = await fetchAllFirmsSources(1); // DAY_RANGE 1 (quota-friendly)
 
+  // Air quality (Fase 2): one request for all configured cities, stored so the
+  // panel survives an upstream outage. Failures here must not fail hot spots.
+  let airSummary: { ok: boolean; fetched: number; upserted: number; error?: string } = {
+    ok: false,
+    fetched: 0,
+    upserted: 0,
+  };
+  try {
+    const model = await loadCityAirModel();
+    if (model.ok) {
+      const upserted = await upsertAirReadings(model.readings);
+      airSummary = { ok: true, fetched: model.readings.length, upserted };
+    } else {
+      airSummary = { ok: false, fetched: 0, upserted: 0, error: model.error };
+    }
+  } catch (error) {
+    airSummary = {
+      ok: false,
+      fetched: 0,
+      upserted: 0,
+      error: error instanceof Error ? error.message : "Gagal ingest udara",
+    };
+  }
+  await recordIngestionRun({
+    source: "open-meteo-air",
+    status: airSummary.ok ? "ok" : "error",
+    detail: airSummary.error,
+    fetched: airSummary.fetched,
+    upserted: airSummary.upserted,
+    durationMs: Date.now() - startedAt,
+  });
+
   const summary = {
     ok: true,
     method: auth.method,
+    air: airSummary,
     sources: [] as Array<{
       source: string;
       ok: boolean;

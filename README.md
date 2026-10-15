@@ -29,7 +29,7 @@ komunitas dan mencegah pengambilan versi tertutup.
 |---|---|---|
 | 0 | Rencana (tanpa kode) | ✅ selesai — lihat `docs/` |
 | 1 | Peta + Titik Panas (FIRMS) | ✅ selesai (kode + tes; menunggu kredensial untuk uji end-to-end) |
-| 2 | Kualitas Udara (ISPU) | ⬜ belum |
+| 2 | Kualitas Udara (ISPU) | 🟡 sebagian — ISPU + panel udara (model) selesai; lapisan stasiun OpenAQ menyusul |
 | 3 | Laporan Warga & Moderasi | ⬜ belum |
 | 4 | Sinyal Sosial, PWA, Penyelesaian | ⬜ belum |
 

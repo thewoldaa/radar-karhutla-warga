@@ -28,7 +28,10 @@ Legenda: ✅ sudah terverifikasi (aman dipakai) · ⚠️ terverifikasi dengan c
 
 | # | Butir | Status | Catatan |
 |---|---|---|---|
-| B1 | Open-Meteo Air Quality: `https://air-quality-api.open-meteo.com/v1/air-quality` + `current=pm2_5,pm10,us_aqi` | ✅ | Satuan μg/m³; `us_aqi` tersedia untuk Indonesia (uji Kalteng 15 Okt 2026). |
+| B1 | Open-Meteo Air Quality: `https://air-quality-api.open-meteo.com/v1/air-quality` + `current=pm2_5,pm10,us_aqi` | ✅ | Satuan μg/m³; `us_aqi` tersedia untuk Indonesia. **Diuji langsung 15 Okt 2026** dengan 32 kota Indonesia: respons 200, bentuk sesuai parser, mis. Palangka Raya pm2_5=719 µg/m³. |
+| B1b | Domain `cams_global` wajib untuk Indonesia | ✅ | Diuji: `domains=cams_europe` → error "No data is available for this location"; `cams_global` berhasil. Kode Fase 2 memakai `cams_global`. |
+| B1c | Endpoint komersial `customer-air-quality-api.open-meteo.com` + `apikey` | ⚠️ | Sintaks identik (dokumentasi resmi); **belum diuji** karena belum berlangganan. Kode sudah mendukung via `OPEN_METEO_API_KEY`. |
+| B17b | Pembulatan ISPU harus ke ATAS, bukan ke terdekat | ✅ | Temuan uji Fase 2: 15,6 µg/m³ dihitung 50,125 → dibulatkan ke terdekat = 50 = "Baik", padahal 15,6 sudah masuk rentang "Sedang". Menampilkan udara lebih bersih dari kenyataan berbahaya bagi kesehatan. Kode memakai `Math.ceil`. Contoh resmi (31,4 → 69,9 → 70) tetap cocok. |
 | B2 | Batas gratis: 10.000/hari, 5.000/jam, 600/menit; multi-koordinat **mengalikan** hitungan call; maks 1.000 lokasi/permintaan | ✅ | Limit per menit aktif (HTTP 429). Limit bulanan belum ditegakkan keras — jangan diandalkan. |
 | B3 | **Free tier = non-komersial**; iklan/sponsor = komersial → wajib langganan | ✅ | Definisi eksplisit di Terms Open-Meteo. **Konsekuensi: sebelum monetisasi aktif, langganan wajib.** |
 | B4 | Harga langganan (Standard ~€29/bln; Professional ~€99/bln) | ⚠️ | Harga hanya di widget Stripe; verifikasi langsung di halaman pricing saat checkout. |

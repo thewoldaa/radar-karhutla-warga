@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { AirPanel } from "@/components/air/AirPanel";
 import { EMERGENCY } from "@/config/site";
 import { freshnessMessage } from "@/lib/freshness";
 import type { HotspotsResponse } from "@/lib/types";
@@ -9,6 +10,7 @@ import { ageLabel, formatWIB } from "@/lib/utils/time";
 
 export interface SummarySheetProps {
   data: HotspotsResponse;
+  userLocation?: { lat: number; lon: number } | null;
 }
 
 const LEGEND: Array<{ label: string; className: string; shape: string }> = [
@@ -22,7 +24,7 @@ const LEGEND: Array<{ label: string; className: string; shape: string }> = [
  * freshness banner, and the standing disclaimer. Collapsible so the map stays
  * usable on small screens.
  */
-export function SummarySheet({ data }: SummarySheetProps) {
+export function SummarySheet({ data, userLocation }: SummarySheetProps) {
   const [open, setOpen] = useState(true);
   const { freshness } = data;
   // Trust the server-computed level. Recomputing it here from `lastUpdated`
@@ -90,6 +92,13 @@ export function SummarySheet({ data }: SummarySheetProps) {
             </span>
           ) : null}
         </p>
+
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Udara di lokasi saya
+        </h3>
+        <div className="mb-3">
+          <AirPanel userLocation={userLocation ?? null} />
+        </div>
 
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
           5 provinsi teratas (sesuai filter)
