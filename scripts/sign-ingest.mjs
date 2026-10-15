@@ -1,28 +1,43 @@
 /**
  * Prints the headers needed to call POST /api/ingest manually.
  *
- * Usage:
- *   node scripts/sign-ingest.mjs <url> <secret> [body]
+ * Usage (secret comes from the environment — never from the command line, where
+ * it would leak into `ps` output, shell history, and CI logs):
  *
- * Example:
- *   node scripts/sign-ingest.mjs https://example.com/api/ingest "$INGEST_HMAC_SECRET"
+ *   INGEST_HMAC_SECRET=... node scripts/sign-ingest.mjs <url> [body]
  *
- * Then:
- *   curl -X POST <url> \
- *     -H "Content-Type: application/json" \
- *     -H "X-Ingest-Timestamp: <ts>" \
- *     -H "X-Ingest-Signature: sha256=<sig>" \
- *     --data '{}'
+ * Or read the secret from stdin:
  *
+ *   node scripts/sign-ingest.mjs <url> --secret-stdin < secret.txt
+ *
+ * Then copy the printed curl command.
  * The same scheme is used by .github/workflows/ingest.yml.
  */
 
 import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 
-const [, , url, secret, body = "{}"] = process.argv;
+const [, , url, maybeBody] = process.argv;
 
-if (!url || !secret) {
-  console.error("Usage: node scripts/sign-ingest.mjs <url> <secret> [body]");
+if (!url) {
+  console.error("Usage: INGEST_HMAC_SECRET=... node scripts/sign-ingest.mjs <url> [body]");
+  console.error("   or: node scripts/sign-ingest.mjs <url> --secret-stdin < secret.txt");
+  process.exit(1);
+}
+
+let secret = process.env.INGEST_HMAC_SECRET?.trim() ?? "";
+let body = maybeBody ?? "{}";
+
+if (maybeBody === "--secret-stdin") {
+  body = "{}";
+  secret = readFileSync(0, "utf8").trim();
+}
+
+if (!secret) {
+  console.error(
+    "Secret tidak ditemukan. Set INGEST_HMAC_SECRET, atau lewati lewat stdin dengan --secret-stdin.\n" +
+      "Demi keamanan, secret TIDAK diterima sebagai argumen command line.",
+  );
   process.exit(1);
 }
 

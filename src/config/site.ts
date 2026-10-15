@@ -25,12 +25,22 @@ export const OFFICIAL_LINKS = [
 ] as const;
 
 /**
- * Demo data: development only, always labelled "DATA CONTOH" in the UI.
- * Hard-disabled in production builds regardless of the environment variable.
+ * Static staging build (GitHub Pages).
+ *
+ * Set at build time: STATIC_EXPORT=true + NEXT_PUBLIC_STATIC_MODE=true.
+ * A static build has no server: no API routes, no database access. It therefore
+ * runs on baked-in demo data and shows an unmistakable STAGING banner.
+ * The production site is NEVER a static export.
+ */
+export const STATIC_MODE = process.env.NEXT_PUBLIC_STATIC_MODE === "true";
+
+/**
+ * Demo data: development and static staging only, always labelled "DATA CONTOH".
+ * In a server build it is hard-disabled in production regardless of the variable.
  */
 export const DEMO_MODE =
-  process.env.NEXT_PUBLIC_DEMO_MODE === "true" &&
-  process.env.NODE_ENV !== "production";
+  STATIC_MODE ||
+  (process.env.NEXT_PUBLIC_DEMO_MODE === "true" && process.env.NODE_ENV !== "production");
 
 /** Indonesian wildfire hot-spot season months (rough, for awareness copy only). */
 export const DRY_SEASON_NOTE =

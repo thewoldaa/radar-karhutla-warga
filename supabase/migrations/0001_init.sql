@@ -251,11 +251,20 @@ as $$
   join public.regions r on extensions.st_intersects(h.geom, r.geom)
   where h.acq_at >= from_ts
     and h.acq_at <= to_ts
+    -- Bound the work: reject unbounded windows instead of scanning everything.
+    and to_ts >= from_ts
+    and to_ts - from_ts <= interval '8 days'
     and (include_low or h.confidence_class <> 'low')
   group by r.name
   order by count(h.id) desc
   limit 5;
 $$;
+
+-- SECURITY: functions get EXECUTE for PUBLIC by default and are auto-exposed by
+-- PostgREST. The server calls this with the secret key, so the public roles do
+-- not need it — revoking prevents unauthenticated spatial-join abuse.
+revoke all on function public.province_hotspot_counts(timestamptz, timestamptz, boolean)
+  from public, anon, authenticated;
 
 -- ============================================================================
 -- 12. Catatan keamanan

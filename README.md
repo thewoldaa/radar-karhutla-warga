@@ -81,8 +81,9 @@ berjalan tiap 30 menit. Tambahkan **repository secrets** (Settings → Secrets �
 | `INGEST_HMAC_SECRET` | string acak ≥32 byte — **sama** dengan nilai di server |
 | `STATUS_URL` | (opsional) URL publik `/api/hotspots` untuk cek kesegaran data |
 
-Untuk mencoba dari komputer sendiri: `node scripts/sign-ingest.mjs <url> <secret>` lalu
-salin perintah `curl` yang dicetak.
+Untuk mencoba dari komputer sendiri: `INGEST_HMAC_SECRET=... node scripts/sign-ingest.mjs <url>`
+lalu salin perintah `curl` yang dicetak. (Secret dibaca dari environment, **bukan** argumen
+command line — agar tidak bocor ke daftar proses dan riwayat shell.)
 
 > **Catatan trade-off:** cron GitHub Actions bisa tertunda saat beban tinggi, dan jadwalnya
 > **dinonaktifkan otomatis setelah 60 hari tanpa aktivitas repo**. Workflow ini sudah

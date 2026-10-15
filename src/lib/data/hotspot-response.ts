@@ -80,15 +80,19 @@ export async function buildHotspotsResponse(
         truncated: result.truncated,
       };
     } catch (error) {
-      // Fall through to the empty/stale response — never show stale data as fresh.
+      // Log the detail server-side; the public response stays generic so internal
+      // schema/permission messages never reach users (and never get CDN-cached).
+      console.error("[hotspots] gagal membaca basis data:", error);
       const freshness: DataFreshness = {
         lastUpdated: window.to,
         fetchedAt: now.toISOString(),
         stale: true,
         staleReason:
-          error instanceof Error
-            ? `Gagal membaca basis data: ${error.message}`
-            : "Gagal membaca basis data.",
+          process.env.NODE_ENV === "production"
+            ? "Gagal membaca basis data. Menampilkan data terakhir yang tersedia."
+            : `Gagal membaca basis data: ${
+                error instanceof Error ? error.message : "penyebab tidak diketahui"
+              }`,
         source: "firms",
       };
       return { data: [], freshness, total24h: 0, topProvinces: [], window, truncated: false };

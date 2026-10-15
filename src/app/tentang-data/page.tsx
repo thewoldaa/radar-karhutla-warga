@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { EMERGENCY, OFFICIAL_LINKS, SITE } from "@/config/site";
+import { EMERGENCY, OFFICIAL_LINKS, SITE, STATIC_MODE } from "@/config/site";
 import { MODIS_CONFIDENCE_THRESHOLDS } from "@/lib/sources/firms/confidence";
 
 export const metadata: Metadata = {
@@ -13,6 +13,16 @@ export const metadata: Metadata = {
 export default function AboutDataPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-6">
+      {STATIC_MODE ? (
+        <p
+          role="status"
+          className="mb-4 rounded-xl border border-purple-300 bg-purple-100 px-4 py-3 text-sm font-semibold text-purple-900"
+        >
+          STAGING — DATA CONTOH. Halaman ini adalah versi uji tanpa data satelit sebenarnya
+          dan tanpa koneksi basis data.
+        </p>
+      ) : null}
+
       <nav aria-label="Breadcrumb" className="mb-4">
         <Link href="/" className="text-sm underline">
           ← Kembali ke peta

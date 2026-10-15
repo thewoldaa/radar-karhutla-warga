@@ -1,18 +1,23 @@
 import Link from "next/link";
 
 import { MapShell } from "@/components/map/MapShell";
-import { SITE } from "@/config/site";
+import { SITE, STATIC_MODE } from "@/config/site";
 import { buildHotspotsResponse } from "@/lib/data/hotspot-response";
+import { buildStaticHotspotsResponse } from "@/lib/demo/static-payload";
 
 // Hot-spot data refreshes at most every 30 minutes (ingest cadence); cache the
 // server-rendered payload for 5 minutes so Slow-4G users get a fast first paint.
+// Static exports are prerendered once at build time instead.
 export const revalidate = 300;
 
 export default async function HomePage() {
-  const initialData = await buildHotspotsResponse({
-    hours: 24,
-    includeLowConfidence: false,
-  });
+  // A static build has no server: bake the demo payload in at build time.
+  const initialData = STATIC_MODE
+    ? buildStaticHotspotsResponse()
+    : await buildHotspotsResponse({
+        hours: 24,
+        includeLowConfidence: false,
+      });
 
   return (
     <main className="flex h-dvh flex-col">

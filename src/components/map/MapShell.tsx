@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SummarySheet } from "@/components/summary/SummarySheet";
 import { MapControls } from "@/components/map/MapControls";
+import { STATIC_MODE } from "@/config/site";
 import type { Bbox, HotspotsResponse } from "@/lib/types";
 
 // MapLibre touches `window` at import time → client-only, no SSR.
@@ -48,6 +49,9 @@ export function MapShell({ initialData }: MapShellProps) {
 
   const fetchData = useCallback(
     async (hours: "24h" | "48h" | "7d", low: boolean, bbox: Bbox | null) => {
+      // Static staging has no server: filtering happens client-side on the
+      // baked-in demo data (see the useMemo below).
+      if (STATIC_MODE) return;
       setIsLoading(true);
       try {
         const params = new URLSearchParams({ hours, low: low ? "1" : "0" });
@@ -76,6 +80,41 @@ export function MapShell({ initialData }: MapShellProps) {
     },
     [],
   );
+
+  // --- Static staging: filter the baked-in demo payload in the browser --------
+  const displayData = useMemo<HotspotsResponse>(() => {
+    if (!STATIC_MODE) return data;
+    const hours = timeFilter === "24h" ? 24 : timeFilter === "48h" ? 48 : 168;
+    const from = Date.now() - hours * 3_600_000;
+    const inWindow = data.data.filter((h) => new Date(h.acqAt).getTime() >= from);
+    const visible = inWindow.filter((h) => includeLow || h.confidenceClass !== "low");
+    const bbox = bboxRef.current;
+    const inView = bbox
+      ? visible.filter(
+          (h) =>
+            h.lon >= bbox.west && h.lon <= bbox.east && h.lat >= bbox.south && h.lat <= bbox.north,
+        )
+      : visible;
+    const provinceTotals = new Map<string, number>();
+    for (const h of visible) {
+      // Demo data carries no province field; group by rounded coordinates so the
+      // panel stays meaningful without inventing administrative names.
+      const key = `${Math.round(h.lat)},${Math.round(h.lon)}`;
+      provinceTotals.set(key, (provinceTotals.get(key) ?? 0) + 1);
+    }
+    const topProvinces = [...provinceTotals.entries()]
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+    return {
+      ...data,
+      data: inView,
+      topProvinces,
+      total24h: data.data.filter(
+        (h) => Date.now() - new Date(h.acqAt).getTime() <= 86_400_000,
+      ).length,
+    };
+  }, [data, timeFilter, includeLow]);
 
   const handleBoundsChange = useCallback(
     (bbox: Bbox) => {
@@ -123,8 +162,17 @@ export function MapShell({ initialData }: MapShellProps) {
 
   return (
     <div className="relative flex-1 overflow-hidden">
+      {STATIC_MODE ? (
+        <p
+          role="status"
+          className="absolute inset-x-0 top-0 z-30 border-b border-purple-300 bg-purple-100 px-3 py-1.5 text-center text-xs font-semibold text-purple-900"
+        >
+          STAGING — DATA CONTOH. Versi uji tanpa data satelit sebenarnya.
+        </p>
+      ) : null}
+
       <MapView
-        features={data.data}
+        features={displayData.data}
         styleUrl={styleUrl}
         showHotspots={showHotspots}
         userLocation={userLocation}
@@ -143,7 +191,7 @@ export function MapShell({ initialData }: MapShellProps) {
         locationMessage={locationMessage}
       />
 
-      <SummarySheet data={data} />
+      <SummarySheet data={displayData} />
     </div>
   );
 }

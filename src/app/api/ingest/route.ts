@@ -19,8 +19,6 @@ import {
 import { isSupabaseConfigured } from "@/lib/db/client";
 import {
   isIngestAuthConfigured,
-  isHmacConfigured,
-  isOidcConfigured,
   verifyIngestRequest,
 } from "@/lib/ingest-auth";
 import { classifyConfidence } from "@/lib/sources/firms/confidence";
@@ -30,6 +28,14 @@ import { acqToIso } from "@/lib/sources/firms/parse";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Maximum accepted request body size.
+ * A legitimate ingest request carries `{}` — anything larger is abuse, and the
+ * body must be rejected BEFORE it is buffered into memory (an unauthenticated
+ * caller could otherwise exhaust the container's memory).
+ */
+const MAX_INGEST_BODY_BYTES = 1024;
+
 export async function POST(request: Request): Promise<NextResponse> {
   if (!isIngestAuthConfigured()) {
     return NextResponse.json(
@@ -38,8 +44,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
+  // Reject oversized payloads before reading them into memory.
+  const declaredLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_INGEST_BODY_BYTES) {
+    return NextResponse.json({ ok: false, error: "Body terlalu besar." }, { status: 413 });
+  }
+
   // Read the raw body once: the HMAC is computed over the exact bytes sent.
-  const rawBody = await request.text();
+  // The stream is bounded so a missing/lying Content-Length cannot exhaust memory.
+  const rawBody = await readBodyWithLimit(request, MAX_INGEST_BODY_BYTES);
+  if (rawBody === null) {
+    return NextResponse.json({ ok: false, error: "Body terlalu besar." }, { status: 413 });
+  }
+
   const auth = await verifyIngestRequest(request, rawBody);
   if (!auth.ok) {
     return NextResponse.json({ ok: false, error: auth.reason }, { status: 401 });
@@ -127,15 +144,50 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 export async function GET(): Promise<NextResponse> {
-  // Convenience for operators: no token required, reveals no data, just state.
-  return NextResponse.json({
-    ok: true,
-    message:
-      "Gunakan POST dengan tanda tangan HMAC (GitHub Actions) atau token OIDC (Cloud Scheduler) untuk menjalankan ingest.",
-    configured: {
-      hmac: isHmacConfigured(),
-      oidc: isOidcConfigured(),
-      database: isSupabaseConfigured(),
+  // Operators can confirm the endpoint exists without learning which
+  // authentication paths or database credentials are configured.
+  return NextResponse.json(
+    {
+      ok: true,
+      message:
+        "Gunakan POST dengan tanda tangan HMAC (GitHub Actions) atau token OIDC (Cloud Scheduler) untuk menjalankan ingest.",
     },
-  });
+    { status: 200, headers: { "Cache-Control": "no-store" } },
+  );
+}
+
+/**
+ * Reads the request body with a hard byte ceiling.
+ * Returns null when the limit is exceeded (stream cancelled), so a caller that
+ * omits or lies about Content-Length cannot force unbounded buffering.
+ */
+async function readBodyWithLimit(
+  request: Request,
+  maxBytes: number,
+): Promise<string | null> {
+  const body = request.body;
+  if (!body) return "";
+
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let total = 0;
+  let text = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return null;
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    return text;
+  } catch {
+    return null;
+  }
 }
