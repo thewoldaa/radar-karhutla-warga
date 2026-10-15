@@ -71,6 +71,18 @@ export async function fetchFirmsSource(
       return { source, hotspots: [], ok: false, error: `HTTP ${res.status}` };
     }
     const hotspots = parseFirmsCsv(text);
+    // Distinguish "valid CSV with zero detections" (legitimate: no fires today)
+    // from "this is not CSV at all" (an API error page, HTML, etc.). Without
+    // this check, a garbled response would silently look like "no fires".
+    const looksLikeCsv = /^latitude\s*,\s*longitude/m.test(text.trim());
+    if (!looksLikeCsv) {
+      return {
+        source,
+        hotspots: [],
+        ok: false,
+        error: "Respons bukan CSV FIRMS yang valid",
+      };
+    }
     if (hotspots.length === 0 && /invalid|error/i.test(text)) {
       return { source, hotspots: [], ok: false, error: "Respons API tidak valid" };
     }

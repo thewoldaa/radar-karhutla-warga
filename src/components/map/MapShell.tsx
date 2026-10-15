@@ -65,13 +65,16 @@ export function MapShell({ initialData }: MapShellProps) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         setData((await response.json()) as HotspotsResponse);
       } catch {
-        // Keep the previous payload; the freshness banner stays as-is.
+        // Keep the previous payload's data, but mark the banner honestly:
+        // we could not refresh, so the numbers on screen are the last known ones.
         setData((previous) => ({
           ...previous,
           freshness: {
             ...previous.freshness,
             stale: true,
-            staleReason: "Gagal memuat data terbaru. Menampilkan data terakhir yang tersimpan.",
+            level: previous.freshness.lastUpdated ? "warn" : "nodata",
+            staleReason:
+              "Gagal memuat data terbaru. Menampilkan data terakhir yang tersimpan.",
           },
         }));
       } finally {

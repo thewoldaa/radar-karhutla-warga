@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { EMERGENCY } from "@/config/site";
-import { freshnessMessage, freshnessLevel } from "@/lib/freshness";
+import { freshnessMessage } from "@/lib/freshness";
 import type { HotspotsResponse } from "@/lib/types";
 import { ageLabel, formatWIB } from "@/lib/utils/time";
 
@@ -25,11 +25,17 @@ const LEGEND: Array<{ label: string; className: string; shape: string }> = [
 export function SummarySheet({ data }: SummarySheetProps) {
   const [open, setOpen] = useState(true);
   const { freshness } = data;
-  const level = freshnessLevel(freshness.lastUpdated);
+  // Trust the server-computed level. Recomputing it here from `lastUpdated`
+  // would turn "we hold no data" into a green "fresh" banner.
+  const level = freshness.level;
   const isDemo = freshness.source === "demo";
+  const hasData = freshness.lastUpdated !== null;
+  // `total24h === null` means the count could not be determined — show "-" rather
+  // than "0", which would falsely read as "no hot spots".
+  const totalLabel = data.total24h === null ? "?" : String(data.total24h);
 
   const bannerClasses =
-    level === "critical"
+    level === "critical" || level === "nodata"
       ? "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
       : level === "warn"
         ? "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
@@ -48,7 +54,12 @@ export function SummarySheet({ data }: SummarySheetProps) {
         className="tap-target flex w-full items-center justify-between gap-2 px-4 py-2 text-left"
       >
         <span className="text-sm font-semibold">
-          Ringkasan · {data.total24h} titik panas 24 jam terakhir
+          {/* Never claim a count we do not actually have. The bbox we watch is
+              slightly wider than Indonesia, so neighbouring detections count too —
+              the label says "area pantau", not "nasional". */}
+          {hasData
+            ? `Ringkasan · ${totalLabel} titik panas 24 jam terakhir`
+            : "Ringkasan · belum ada data tersimpan"}
         </span>
         <span aria-hidden="true" className="text-slate-500">
           {open ? "▾" : "▴"}
@@ -69,8 +80,11 @@ export function SummarySheet({ data }: SummarySheetProps) {
         <p className={`mb-3 rounded-lg border px-3 py-2 text-xs ${bannerClasses}`}>
           {freshness.stale && freshness.staleReason
             ? freshness.staleReason
-            : freshnessMessage(level, formatWIB(freshness.lastUpdated))}
-          {!freshness.stale ? (
+            : freshnessMessage(
+                level,
+                freshness.lastUpdated ? formatWIB(freshness.lastUpdated) : "-",
+              )}
+          {!freshness.stale && freshness.lastUpdated ? (
             <span className="block text-[11px] opacity-80">
               Umur data: {ageLabel(freshness.lastUpdated)}
             </span>
@@ -100,6 +114,14 @@ export function SummarySheet({ data }: SummarySheetProps) {
           </p>
         )}
 
+        {/* Never clip data silently: say so when the viewport limit applies. */}
+        {data.truncated ? (
+          <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+            Menampilkan sebagian titik saja (batas tampilan). Perbesar peta untuk melihat
+            area tertentu.
+          </p>
+        ) : null}
+
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
           Keterangan titik
         </h3>
@@ -115,6 +137,10 @@ export function SummarySheet({ data }: SummarySheetProps) {
           ))}
           <li className="text-xs text-slate-500">
             Ukuran titik mengikuti nilai FRP (kekuatan radiasi panas).
+          </li>
+          <li className="text-xs text-slate-500">
+            Angka di atas mencakup seluruh <strong>area pantau</strong> (bbox sedikit lebih
+            luas dari Indonesia), jadi bisa termasuk deteksi di perairan/wilayah tetangga.
           </li>
         </ul>
 

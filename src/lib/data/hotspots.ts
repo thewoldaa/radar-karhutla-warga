@@ -152,17 +152,26 @@ export async function latestObservationAt(): Promise<string | null> {
   return (data as { acq_at: string }).acq_at ?? null;
 }
 
-export async function countSince(fromIso: string, includeLowConfidence: boolean): Promise<number> {
+/**
+ * Count of detections since a timestamp.
+ * Returns `null` when the count could NOT be determined — never 0, because 0
+ * would be displayed as "no hot spots", which is a factual claim we cannot make
+ * after a failed read.
+ */
+export async function countSince(
+  fromIso: string,
+  includeLowConfidence: boolean,
+): Promise<number | null> {
   const supabase = getServerSupabase();
-  if (!supabase) return 0;
+  if (!supabase) return null;
   let builder = supabase
     .from("hotspots")
     .select("id", { count: "exact", head: true })
     .gte("acq_at", fromIso);
   if (!includeLowConfidence) builder = builder.neq("confidence_class", "low");
   const { count, error } = await builder;
-  if (error) return 0;
-  return count ?? 0;
+  if (error || count === null) return null;
+  return count;
 }
 
 /**

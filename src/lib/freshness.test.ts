@@ -33,9 +33,16 @@ describe("freshnessLevel", () => {
   it("never reports fresh when there is no data at all", () => {
     // This is the important safety property: an empty database must NOT look
     // like "no fires today" — it must look like "we have no data".
-    expect(freshnessLevel(null, NOW)).toBe("critical");
-    expect(freshnessLevel("", NOW)).toBe("critical");
-    expect(freshnessLevel("not-a-date", NOW)).toBe("critical");
+    expect(freshnessLevel(null, NOW)).toBe("nodata");
+    expect(freshnessLevel("", NOW)).toBe("nodata");
+    expect(freshnessLevel("not-a-date", NOW)).toBe("nodata");
+  });
+
+  it("distinguishes 'no data' from 'old data' (different UI banners)", () => {
+    // A fresh install (nodata) and a stalled ingest (critical) must not render
+    // the same banner, and neither may read as healthy.
+    expect(freshnessLevel(null, NOW)).not.toBe(freshnessLevel(hoursBefore(48), NOW));
+    expect(freshnessLevel(null, NOW)).not.toBe("fresh");
   });
 
   it("does not treat future timestamps as stale", () => {
@@ -59,5 +66,14 @@ describe("freshnessMessage", () => {
 
   it("says the source may be unavailable when critical", () => {
     expect(freshnessMessage("critical", "kemarin")).toMatch(/tidak tersedia/i);
+  });
+
+  it("never implies 'no fires' when we hold no data", () => {
+    const message = freshnessMessage("nodata", "-");
+    // Must state that data is missing, and must explicitly deny the dangerous
+    // reading ("no hot spots" = "no fires"). Asserting on the full sentence is
+    // what matters, not the absence of the phrase itself.
+    expect(message).toMatch(/belum ada data/i);
+    expect(message).toMatch(/bukan berarti tidak ada titik panas/i);
   });
 });

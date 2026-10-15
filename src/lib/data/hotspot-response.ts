@@ -59,8 +59,11 @@ export async function buildHotspotsResponse(
 
       const level = freshnessLevel(lastObservation, now);
       const freshness: DataFreshness = {
-        lastUpdated: lastObservation ?? window.to,
+        // Never substitute "now" for a missing observation: that would make an
+        // empty database look freshly updated (level would read as "fresh").
+        lastUpdated: lastObservation,
         fetchedAt: now.toISOString(),
+        level,
         stale: level !== "fresh",
         staleReason:
           level === "fresh"
@@ -74,6 +77,7 @@ export async function buildHotspotsResponse(
       return {
         data: result.features,
         freshness,
+        // `null` propagates an unknown count; the UI shows "-" instead of 0.
         total24h,
         topProvinces: provinces,
         window,
@@ -84,8 +88,9 @@ export async function buildHotspotsResponse(
       // schema/permission messages never reach users (and never get CDN-cached).
       console.error("[hotspots] gagal membaca basis data:", error);
       const freshness: DataFreshness = {
-        lastUpdated: window.to,
+        lastUpdated: null,
         fetchedAt: now.toISOString(),
+        level: "nodata",
         stale: true,
         staleReason:
           process.env.NODE_ENV === "production"
@@ -95,7 +100,16 @@ export async function buildHotspotsResponse(
               }`,
         source: "firms",
       };
-      return { data: [], freshness, total24h: 0, topProvinces: [], window, truncated: false };
+      // total24h is null (unknown), not 0: the read failed, so we cannot claim
+      // "no hot spots in the last 24 hours".
+      return {
+        data: [],
+        freshness,
+        total24h: null,
+        topProvinces: [],
+        window,
+        truncated: false,
+      };
     }
   }
 
@@ -114,8 +128,9 @@ export async function buildHotspotsResponse(
       return inWindow && visible && inBbox;
     });
     const freshness: DataFreshness = {
-      lastUpdated: filtered[0]?.acqAt ?? now.toISOString(),
+      lastUpdated: filtered[0]?.acqAt ?? null,
       fetchedAt: now.toISOString(),
+      level: "fresh",
       stale: false,
       staleReason: "DATA CONTOH — bukan data satelit sebenarnya.",
       source: "demo",
@@ -134,13 +149,22 @@ export async function buildHotspotsResponse(
 
   // --- 3. Nothing configured ------------------------------------------------
   const freshness: DataFreshness = {
-    lastUpdated: window.to,
+    lastUpdated: null,
     fetchedAt: now.toISOString(),
+    level: "nodata",
     stale: true,
     staleReason:
       "Basis data belum dikonfigurasi. Hubungkan Supabase dan jalankan ingest agar data titik panas tampil.",
     source: "firms",
   };
   const empty: ProvinceCount[] = [];
-  return { data: [], freshness, total24h: 0, topProvinces: empty, window, truncated: false };
+  // total24h is null (unknown) — no data source is connected at all.
+  return {
+    data: [],
+    freshness,
+    total24h: null,
+    topProvinces: empty,
+    window,
+    truncated: false,
+  };
 }

@@ -17,8 +17,9 @@ export function buildStaticHotspotsResponse(now: Date = new Date()): HotspotsRes
   return {
     data: features.filter((h) => h.confidenceClass !== "low"),
     freshness: {
-      lastUpdated: features[0]?.acqAt ?? now.toISOString(),
+      lastUpdated: features[0]?.acqAt ?? null,
       fetchedAt: now.toISOString(),
+      level: "fresh",
       stale: false,
       staleReason: "STAGING — DATA CONTOH. Bukan data satelit sebenarnya.",
       source: "demo",
